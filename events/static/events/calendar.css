@@ -4,14 +4,37 @@
   --card-bg: rgba(255,255,255,0.03);
   --muted: rgba(255,255,255,0.75);
   --accent: #4f46e5;
+  /* Default page text color used across the stylesheet */
+  --text: #ffffff;
+  --text-btn: #000000;
+  --text-box: #000000;
+  /* Day-number bubble defaults */
+  --day-bubble-bg: #250d58; /* darker blue */
+  --day-bubble-color: #ffffff; /* text inside bubble */
+  /* Bubble sizing: make bubbles perfect circles by using a fixed size */
+  --day-bubble-size: 34px;
+  /* Today's bubble: darker turquoise, no border */
+  --day-today-bg: #393bb4; /* darker blue for today */
+  --day-today-box-shadow: 0 8px 24px rgba(11,94,215,0.24);
+  /* middle stop for background (lighter tone in center) */
+  --bg-middle: #145a93;
+  /* weekday header color for FullCalendar (e.g., Mon, Tue, Wed) */
+  --weekday-color: #0b5ed7; /* darker blue */
 }
 
 html, body {
   height: 100%;
+  min-height: 100vh; /* ensure full viewport coverage */
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-  background: linear-gradient(180deg, var(--bg-start) 0%, var(--bg-end) 100%);
   color: #fff;
+  /* simple vertical gradient: darker top -> lighter middle -> darker bottom */
+  background: linear-gradient(180deg,
+    var(--bg-start) 0%,
+    var(--bg-middle) 50%,
+    var(--bg-end) 100%
+  ) fixed no-repeat;
+  background-size: cover;
 }
 
 /* Page container */
@@ -23,7 +46,8 @@ html, body {
 
 /* Card around calendar */
 .calendar-card{
-  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+  /* keep card translucent so gradient shows through */
+  background: var(--card-bg);
   border-radius: 12px;
   box-shadow: 0 8px 30px rgba(2,6,23,0.6);
   overflow: hidden;
@@ -32,6 +56,31 @@ html, body {
 /* Ensure card text contrasts on cream */
 .calendar-card, .calendar-card * {
   color: var(--text) !important;
+}
+
+/* Strong overrides to ensure the page gradient shows through FullCalendar containers
+   without removing event colors. Targets only background containers used by FullCalendar. */
+#calendar,
+.page-wrap,
+.fc .fc-scrollgrid-section-bg,
+.fc .fc-scrollgrid-bg,
+.fc .fc-daygrid-day-bg,
+.fc .fc-timegrid-slot,
+.fc .fc-bg,
+.fc .fc-scrollgrid,
+.fc .fc-daygrid-body,
+.fc .fc-daygrid-day-frame,
+.fc .fc-daygrid-day,
+.fc .fc-scrollgrid-section-liquid,
+.fc .fc-timegrid .fc-timegrid-col-bg {
+  background: transparent !important;
+  background-image: none !important;
+}
+
+/* Ensure the root gradient is applied and enforced */
+html, body {
+  background: linear-gradient(180deg, var(--bg-start) 0%, var(--bg-middle) 50%, var(--bg-end) 100%) fixed no-repeat !important;
+  background-size: cover !important;
 }
 
 /* Header */
@@ -62,8 +111,9 @@ html, body {
   border-color: var(--accent) !important;
 }
 .btn-primary:hover, .btn-primary:focus {
-  background-color: var(--event-gradient-b) !important;
-  border-color: var(--event-gradient-b) !important;
+  /* simpler hover that doesn't reference an undefined variable */
+  background-color: #4338ca !important;
+  border-color: #4338ca !important;
 }
 
 /* Outline light -> use teal outline on cream */
@@ -103,16 +153,40 @@ a { color: var(--accent) !important; }
 /* FullCalendar event appearance tweaks */
 .fc .fc-event, .fc .fc-daygrid-event {
   border: 0;
-  font-weight:600;
-  color: #fff;
+  font-weight: 600;
+  /* Event text should be dark for readability on light event backgrounds */
+  color: #000 !important;
   box-shadow: 0 2px 6px rgba(2,6,23,0.45);
   border-radius: 8px;
+  position: relative;
+  transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+  will-change: transform, box-shadow;
+}
+
+/* Hover / focus styles make events "stand out" visually */
+.fc .fc-event:hover,
+.fc .fc-daygrid-event:hover,
+.fc .fc-event:focus {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 14px 38px rgba(2,6,23,0.6);
+  filter: brightness(1.06);
+  /* place the hovered event above everything on the page (except true modals which intentionally sit above) */
+  z-index: 99999;
+  outline: none;
+}
+
+/* Also support keyboard focus via keyboard navigation */
+.fc .fc-event:focus-visible {
+  box-shadow: 0 10px 30px rgba(2,6,23,0.6), 0 0 0 3px rgba(79,70,229,0.12);
 }
 
 /* Stronger, specific overrides for FullCalendar and other blue defaults */
-/* Force page background and container colors */
-html, body, .page-wrap {
-  background: linear-gradient(180deg, var(--bg-start) 0%, var(--bg-end) 100%) !important;
+/* Apply a single authoritative reflected gradient for the page background.
+   This uses the defined variables and mirrors the top color at the bottom
+   to produce a "reflected" effect around the middle stop. */
+html, body {
+  background: linear-gradient(180deg, var(--bg-start) 0%, var(--bg-middle) 50%, var(--bg-start) 100%) fixed no-repeat !important;
+  background-size: cover !important;
 }
 
 /* FullCalendar toolbar / header */
@@ -126,7 +200,8 @@ html, body, .page-wrap {
 }
 
 /* Day cells background (avoid default blue shading) */
-.fc .fc-daygrid-day, .fc .fc-daygrid-day-frame, .fc .fc-scroller {
+.fc .fc-daygrid-day, .fc .fc-daygrid-day-frame, .fc .fc-scroller,
+.fc .fc-timegrid, .fc .fc-daygrid-body, .fc .fc-scrollgrid, #calendar, .fc {
   background: transparent !important;
   color: var(--text) !important;
 }
@@ -138,7 +213,7 @@ html, body, .page-wrap {
 
 /* Ensure buttons, badges and links use teal/cream theme */
 .badge, .alert, .form-control {
-  color: var(--text) !important;
+  color: var(--text-box) !important;
 }
 
 /* Form controls focus */
@@ -147,10 +222,7 @@ html, body, .page-wrap {
   box-shadow: 0 0 0 0.2rem rgba(13,148,136,0.12) !important;
 }
 
-/* FullCalendar event text color override */
-.fc .fc-event, .fc .fc-daygrid-event {
-  color: #fff !important;
-}
+/* FullCalendar event text color override kept earlier; duplicate removed */
 
 /* Prevent any lingering strong blue backgrounds from FullCalendar */
 .fc .fc-button-primary, .fc .fc-button {
@@ -163,3 +235,177 @@ html, body, .page-wrap {
   .calendar-header{flex-direction:column;align-items:flex-start}
   .brand p{display:none}
 }
+
+/* Make the day numbers more stylish: rounded badges, teal accent, larger and clearer */
+.fc .fc-daygrid-day-top {
+  padding: 6px 8px 0 8px; /* give room for the badge */
+}
+.fc .fc-daygrid-day-number {
+  display: inline-block;
+  width: var(--day-bubble-size);
+  height: var(--day-bubble-size);
+  line-height: var(--day-bubble-size);
+  padding: 0;
+  border-radius: 50%;
+  text-align: center;
+  font-weight: 600;
+  color: var(--day-bubble-color);
+  background: var(--day-bubble-bg);
+  box-shadow: 0 2px 6px rgba(2,6,23,0.15);
+}
+
+/* Today's number gets a filled teal circle */
+.fc .fc-day-today .fc-daygrid-day-number {
+  background: var(--day-today-bg) !important;
+  color: var(--day-bubble-color) !important;
+  box-shadow: var(--day-today-box-shadow) !important;
+  box-sizing: border-box !important;
+}
+
+/* Hover state for day cells */
+.fc .fc-daygrid-day-frame:hover .fc-daygrid-day-number {
+  transform: scale(1.05);
+  transition: transform 120ms ease;
+}
+
+/* Make the header weekday names more visible and remove underlines from links */
+.fc .fc-col-header-cell-cushion,
+.fc .fc-col-header-cell a,
+.fc .fc-col-header-cell a:link,
+.fc .fc-col-header-cell a:visited,
+.fc .fc-col-header-cell a:hover,
+.fc .fc-col-header-cell a:active {
+  font-weight: 700;
+  color: var(--weekday-color) !important;
+  text-decoration: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+/* Extra, higher-specificity rules to catch FullCalendar variants where the day number is an <a> or different structure */
+.calendar-card .fc .fc-daygrid-day-top a,
+.calendar-card .fc .fc-daygrid-day-number a,
+.calendar-card .fc .fc-daygrid-day-top .fc-daygrid-day-number,
+.calendar-card .fc .fc-daygrid-day-top .fc-daygrid-day-number > a {
+  display: inline-block !important;
+  width: var(--day-bubble-size) !important;
+  height: var(--day-bubble-size) !important;
+  line-height: var(--day-bubble-size) !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  text-align: center !important;
+  font-weight: 600 !important;
+  color: var(--day-bubble-color) !important;
+  background: var(--day-bubble-bg) !important;
+  box-shadow: 0 2px 6px rgba(2,6,23,0.15) !important;
+}
+
+/* Remove underlines on day number links */
+.fc .fc-daygrid-day-number,
+.fc .fc-daygrid-day-top a,
+.calendar-card .fc .fc-daygrid-day-number a,
+.calendar-card .fc .fc-daygrid-day-top > a,
+.calendar-card .fc .fc-daygrid-day-top .fc-daygrid-day-number > a {
+  text-decoration: none !important;
+}
+
+/* Stronger: target anchor pseudo-classes and possible selector forms FullCalendar uses */
+.fc .fc-daygrid-day-top a,
+.fc .fc-daygrid-day-top a:link,
+.fc .fc-daygrid-day-top a:visited,
+.fc .fc-daygrid-day-top a:hover,
+.fc .fc-daygrid-day-top a:active,
+.fc .fc-daygrid-day-number a,
+.fc .fc-daygrid-day-number a:link,
+.fc .fc-daygrid-day-number a:visited {
+  text-decoration: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+/* Some FullCalendar themes wrap the number in a small element - remove underlines there too */
+.fc .fc-daygrid-day-top small,
+.fc .fc-daygrid-day-top small a {
+  text-decoration: none !important;
+}
+
+/* Some calendar builds put the day number in a small <a> with its own color - override that */
+.calendar-card .fc .fc-daygrid-day-top a { color: var(--accent) !important; }
+
+/* Ensure today's number variant is covered */
+.calendar-card .fc .fc-day-today .fc-daygrid-day-number,
+.calendar-card .fc .fc-day-today .fc-daygrid-day-top a {
+  background: var(--day-today-bg) !important;
+  color: var(--day-bubble-color) !important;
+  box-shadow: var(--day-today-box-shadow) !important;
+  box-sizing: border-box !important;
+}
+
+/* Robust background layer: use a fixed pseudo-element so the reflected gradient
+   appears even if some other element accidentally paints a solid background
+   on the root or body. This is placed last so it wins in the cascade. */
+html::before, body::before {
+  content: '';
+  position: fixed;
+  inset: 0; /* top:0; right:0; bottom:0; left:0; */
+  pointer-events: none;
+  z-index: 0; /* place it at the bottom of the normal stacking context */
+  background: linear-gradient(180deg, var(--bg-start) 0%, var(--bg-middle) 50%, var(--bg-start) 100%) no-repeat fixed;
+  background-size: cover;
+  /* reduce rendering artifacts on some browsers */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Ensure page content sits above the pseudo-element so the gradient is visible */
+.page-wrap, .calendar-card { position: relative; z-index: 1; }
+
+/* When interacting with the calendar, raise the calendar card so hovered events can appear above other page elements */
+.calendar-card:focus-within,
+.calendar-card:hover {
+  z-index: 9998;
+}
+
+/* Prevent selecting calendar text to avoid accidental selection while interacting */
+/* Targets FullCalendar elements inside the calendar card only so other text (forms, etc.) remains selectable. */
+.calendar-card .fc,
+.calendar-card .fc * {
+  -webkit-user-select: none; /* Safari/Chrome */
+  -moz-user-select: none;    /* Firefox */
+  -ms-user-select: none;     /* IE10+ */
+  user-select: none;         /* Standard */
+}
+
+/* Allow selecting text inside modals or form controls by opting out where needed */
+.calendar-card .fc .fc-popover,
+.calendar-card .fc .fc-popover *,
+.calendar-card .fc input,
+.calendar-card .fc textarea {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+.dropdown-item {
+  color: var(--text) !important;
+}
+
+.dropdown-item:hover, .dropdown-item:focus {
+  background: var(--bg-end) !important;
+  color: #fff !important;
+}
+
+.dropdown-menu.dropdown-menu-end.show {
+  background: var(--accent) !important;
+}
+
+.alert.alert-error {
+  color: var(--text) !important;
+}
+
+.list-group-item.d-flex.justify-content-between.align-items-start {
+  background: var(--card-bg) !important;
+  color: var(--text) !important;
+}
+

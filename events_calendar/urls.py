@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 from django.contrib.auth.views import LogoutView
-from events.views import home_view, calendar_view, events_json, myevents_view
+from events.views import home_view, calendar_view, events_json, myevents_view, register_view, event_detail, participate_event
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -25,8 +25,11 @@ urlpatterns = [
     path('myevents/', myevents_view, name='myevents'),
     # provide a logout view that redirects back to the calendar after logging out
     path('accounts/logout/', LogoutView.as_view(next_page='/calendar/'), name='logout'),
+    path('accounts/register/', register_view, name='register'),
     # include auth views (login etc.) at /accounts/
     path('accounts/', include('django.contrib.auth.urls')),
     path("calendar/", calendar_view, name="calendar"),
     path("events-json/", events_json, name="events_json"),
+    path("events/<int:event_id>/", event_detail, name="event_detail"),
+    path("events/<int:event_id>/participate/", participate_event, name="event_participate"),
 ]

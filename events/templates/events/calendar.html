@@ -17,19 +17,7 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 
     <link href="{% static 'events/calendar.css' %}" rel="stylesheet">
-    <!-- Inline overrides (high specificity) to force cream/teal theme; remove after verification -->
-    <style>
-      html, body { background: linear-gradient(180deg, #fbf6ef 0%, #e6f7f2 100%) !important; color: #063B36 !important; }
-      .page-wrap { background: transparent !important; }
-      .calendar-card { background: #ffffff !important; color: #063B36 !important; border-color: rgba(6,59,54,0.06) !important; }
-      .brand .logo { background: linear-gradient(135deg,#0d9488,#0ea5a4) !important; }
-      .btn-primary, .fc .fc-button-primary { background-color: #0d9488 !important; border-color: #0d9488 !important; }
-      .btn-outline-light { color: #063B36 !important; border-color: rgba(6,59,54,0.12) !important; }
-      .modal-content { background: #ffffff !important; color: #063B36 !important; }
-      .fc .fc-daygrid-day, .fc .fc-daygrid-day-frame, .fc .fc-scroller { background: transparent !important; color: #063B36 !important; }
-      .fc .fc-col-header-cell, .fc .fc-daygrid-day-number { color: #063B36 !important; }
-      .fc .fc-event, .fc .fc-daygrid-event { background: linear-gradient(135deg,#0d9488,#0ea5a4) !important; color: #fff !important; }
-    </style>
+    
   </head>
   <body>
 
@@ -76,7 +64,7 @@
     <!-- Event details modal (Bootstrap) -->
     <div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-  <div class="modal-content">
+  <div class="modal-content bg-dark text-white">
           <div class="modal-header border-0">
             <h5 class="modal-title" id="eventModalLabel">Event</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -137,38 +125,84 @@
           },
 
           eventClick: function(info){
+            // Directly navigate to the event detail page when an event is clicked.
             info.jsEvent.preventDefault();
             const ev = info.event;
-            const modal = new bootstrap.Modal(document.getElementById('eventModal'));
-
-            // Fill modal
-            document.getElementById('ev-title').textContent = ev.title || '(no title)';
-
-            const start = ev.start ? new Date(ev.start) : null;
-            const end = ev.end ? new Date(ev.end) : null;
-            let timeStr = '';
-            if(start && end){
-              timeStr = start.toLocaleString() + ' — ' + end.toLocaleString();
-            } else if(start){
-              timeStr = start.toLocaleString();
+            const orig = (ev.extendedProps && ev.extendedProps.orig_id) || (ev.id ? ev.id.split('-')[0] : null);
+            if(orig){
+              window.location.href = '/events/' + encodeURIComponent(orig) + '/';
             } else {
-              timeStr = '';
+              // fallback: do nothing or open the modal if id can't be determined
+              console.warn('Could not determine original event id for navigation:', ev.id, ev.extendedProps);
             }
-            document.getElementById('ev-time').textContent = timeStr;
-
-            const desc = ev.extendedProps && ev.extendedProps.description ? ev.extendedProps.description : '';
-            document.getElementById('ev-desc').textContent = desc;
-
-            // any extra props
-            const extra = [];
-            if(ev.extendedProps && ev.extendedProps.location) extra.push('Location: ' + ev.extendedProps.location);
-            document.getElementById('ev-extra').textContent = extra.join(' • ');
-
-            modal.show();
           }
         });
 
         calendar.render();
+
+        // Ensure day numbers are styled correctly across FullCalendar variants.
+        function styleDayNumbers() {
+          // Read CSS variables from :root so JS styling follows the CSS config
+          const root = getComputedStyle(document.documentElement);
+          const bubbleBg = (root.getPropertyValue('--day-bubble-bg') || '#4026a6').trim();
+          const bubbleColor = (root.getPropertyValue('--day-bubble-color') || '#ffffff').trim();
+          const todayBg = (root.getPropertyValue('--day-today-bg') || '#170b45').trim();
+          const todayBoxShadow = (root.getPropertyValue('--day-today-box-shadow') || '0 8px 24px rgba(6,182,212,0.24)').trim();
+            const bubbleSize = (root.getPropertyValue('--day-bubble-size') || '34px').trim();
+
+          // selectors that might contain the day number across versions
+          const selectors = [
+            '.fc-daygrid-day-number',
+            '.fc-daygrid-day-top a',
+            '.fc-daygrid-day-top > a',
+            '.fc-daygrid-day-top .fc-daygrid-day-number',
+          ];
+
+          const elems = new Set();
+          selectors.forEach(sel => document.querySelectorAll(sel).forEach(e => elems.add(e)));
+
+          elems.forEach(el => {
+            // the element might be an <a> or a <div>; style inline to override transient FC styles
+            el.style.display = 'inline-block';
+              el.style.width = bubbleSize;
+              el.style.height = bubbleSize;
+              el.style.lineHeight = bubbleSize;
+              el.style.padding = '0';
+            el.style.borderRadius = '50%';
+            el.style.textAlign = 'center';
+            el.style.fontWeight = '600';
+            el.style.color = bubbleColor;
+            el.style.background = bubbleBg;
+            el.style.boxShadow = '0 2px 6px rgba(2,6,23,0.15)';
+            // remove any underline/border from anchors or default link styles
+            el.style.textDecoration = 'none';
+            el.style.textDecorationLine = 'none';
+            el.style.borderBottom = 'none';
+          });
+
+          // style today's number specifically
+          document.querySelectorAll('.fc-day-today').forEach(day => {
+            const num = day.querySelector('.fc-daygrid-day-number') || day.querySelector('.fc-daygrid-day-top a');
+            if (num) {
+            num.style.width = bubbleSize;
+            num.style.height = bubbleSize;
+            num.style.lineHeight = bubbleSize;
+            num.style.background = todayBg;
+            num.style.color = bubbleColor;
+            num.style.boxShadow = todayBoxShadow;
+            num.style.boxSizing = 'border-box';
+            num.style.textDecoration = 'none';
+            num.style.borderBottom = 'none';
+            }
+          });
+        }
+
+        // run once after render
+        setTimeout(styleDayNumbers, 80);
+
+        // re-run when the calendar updates (e.g., navigation). Use a MutationObserver on the calendar element.
+        const mo = new MutationObserver(() => styleDayNumbers());
+        mo.observe(calendarEl, { childList: true, subtree: true });
       });
     </script>
   </body>

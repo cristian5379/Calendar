@@ -18,5 +18,12 @@ class Event(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)  # set once when created
     updated_at = models.DateTimeField(auto_now=True)      # updates on every save
 
+    # users who are participating in this event ( RSVPs / attendees )
+    participants = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name='participating_events'
+    )
+
     def __str__(self):
         return f"{self.title} ({self.start_time:%Y-%m-%d %H:%M})"
