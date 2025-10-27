@@ -1,0 +1,165 @@
+:root{
+  --bg-start: #0f172a; /* deep navy */
+  --bg-end: #0f4c81;   /* blue */
+  --card-bg: rgba(255,255,255,0.03);
+  --muted: rgba(255,255,255,0.75);
+  --accent: #4f46e5;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  background: linear-gradient(180deg, var(--bg-start) 0%, var(--bg-end) 100%);
+  color: #fff;
+}
+
+/* Page container */
+.page-wrap{
+  max-width: 1200px;
+  margin: 24px auto;
+  padding: 20px;
+}
+
+/* Card around calendar */
+.calendar-card{
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+/* Ensure card text contrasts on cream */
+.calendar-card, .calendar-card * {
+  color: var(--text) !important;
+}
+
+/* Header */
+.calendar-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:18px 22px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.brand .logo{
+  width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#06b6d4);display:inline-block;box-shadow:0 4px 12px rgba(79,70,229,0.25);
+}
+.brand h1{font-size:1.05rem;margin:0;font-weight:600}
+.brand p{margin:0;font-size:0.8rem;color:var(--muted)}
+
+/* Buttons: make primary match teal accent */
+.btn-primary {
+  background-color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+.btn-primary:hover, .btn-primary:focus {
+  background-color: var(--event-gradient-b) !important;
+  border-color: var(--event-gradient-b) !important;
+}
+
+/* Outline light -> use teal outline on cream */
+.btn-outline-light {
+  color: var(--text) !important;
+  background-color: transparent !important;
+  border-color: rgba(6,59,54,0.12) !important;
+}
+.btn-outline-light:hover {
+  background-color: rgba(13,148,136,0.06) !important;
+}
+
+/* Modal content should be light */
+.modal-content {
+  background: var(--card-bg) !important;
+  color: var(--text) !important;
+  border-radius: 8px;
+}
+
+/* Links */
+a { color: var(--accent) !important; }
+
+/* FullCalendar header buttons (override FC classes) */
+.fc .fc-button-primary {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+}
+
+/* make the calendar occupy a good height */
+#calendar{
+  width:100%;
+  min-height: 72vh;
+  padding: 16px;
+}
+
+/* FullCalendar event appearance tweaks */
+.fc .fc-event, .fc .fc-daygrid-event {
+  border: 0;
+  font-weight:600;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(2,6,23,0.45);
+  border-radius: 8px;
+}
+
+/* Stronger, specific overrides for FullCalendar and other blue defaults */
+/* Force page background and container colors */
+html, body, .page-wrap {
+  background: linear-gradient(180deg, var(--bg-start) 0%, var(--bg-end) 100%) !important;
+}
+
+/* FullCalendar toolbar / header */
+.fc .fc-toolbar, .fc .fc-toolbar-chunk, .fc .fc-toolbar-title {
+  color: var(--text) !important;
+}
+.fc .fc-toolbar .fc-button {
+  color: #fff !important;
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+/* Day cells background (avoid default blue shading) */
+.fc .fc-daygrid-day, .fc .fc-daygrid-day-frame, .fc .fc-scroller {
+  background: transparent !important;
+  color: var(--text) !important;
+}
+
+/* Calendar grid title and numbers */
+.fc .fc-col-header-cell, .fc .fc-daygrid-day-number {
+  color: var(--text) !important;
+}
+
+/* Ensure buttons, badges and links use teal/cream theme */
+.badge, .alert, .form-control {
+  color: var(--text) !important;
+}
+
+/* Form controls focus */
+.form-control:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 0.2rem rgba(13,148,136,0.12) !important;
+}
+
+/* FullCalendar event text color override */
+.fc .fc-event, .fc .fc-daygrid-event {
+  color: #fff !important;
+}
+
+/* Prevent any lingering strong blue backgrounds from FullCalendar */
+.fc .fc-button-primary, .fc .fc-button {
+  background: var(--accent) !important;
+  border: 1px solid var(--accent) !important;
+}
+
+/* small responsive adjustments */
+@media (max-width: 576px){
+  .calendar-header{flex-direction:column;align-items:flex-start}
+  .brand p{display:none}
+}

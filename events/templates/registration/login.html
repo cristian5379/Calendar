@@ -1,0 +1,61 @@
+{% load static %}
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Log in</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{% static 'events/calendar.css' %}" rel="stylesheet">
+    <style>
+      .login-wrap{min-height:70vh;display:flex;align-items:center;justify-content:center}
+      .login-card{max-width:480px;padding:28px}
+    </style>
+  </head>
+  <body>
+    <div class="page-wrap login-wrap">
+      <div class="calendar-card login-card shadow-sm">
+        <div class="calendar-header">
+          <div class="brand">
+            <div class="logo" aria-hidden="true"></div>
+            <div>
+              <h1>Sign in</h1>
+              <p class="mb-0">Use your credentials to sign in</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4">
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+
+            <div class="mb-3">
+              <label class="form-label">Username</label>
+              {{ form.username }}
+              {{ form.username.errors }}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Password</label>
+              {{ form.password }}
+              {{ form.password.errors }}
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary">Sign in</button>
+              <a href="{% url 'home' %}" class="btn btn-outline-light">Back</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
