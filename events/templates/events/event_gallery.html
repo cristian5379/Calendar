@@ -22,14 +22,14 @@
         </div>
 
         {% if images %}
-          <!-- Masonry-style gallery that fills the page and keeps images' aspect ratios -->
-          <div class="masonry">
+          <!-- JS-driven Masonry grid. grid-sizer defines column width for Masonry. -->
+          <div class="grid" id="gallery-grid">
+            <div class="grid-sizer"></div>
             {% for img in images %}
-              <div class="masonry-item">
+              <div class="grid-item">
                 <a href="{{ img.image.url }}" target="_blank">
                   <img src="{{ img.image.url }}" alt="Photo" class="gallery-thumb" loading="lazy">
                 </a>
-                <div class="text-white small mt-1">Uploaded by: {% if img.uploaded_by %}{{ img.uploaded_by.username }}{% else %}anonymous{% endif %} — {{ img.created_at }}</div>
               </div>
             {% endfor %}
           </div>
@@ -124,6 +124,34 @@
             try{ input.focus(); }catch(e){}
           }
         }
+      })();
+    </script>
+    <!-- imagesLoaded + Masonry for animated masonry layout -->
+    <script src="https://unpkg.com/imagesloaded@4/imagesloaded.pkgd.min.js"></script>
+    <script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js"></script>
+    <script>
+      // Initialize Masonry when images are ready
+      (function(){
+        const grid = document.querySelector('#gallery-grid');
+        if(!grid) return;
+        // Wait until images have loaded then initialize Masonry for animated layout
+        imagesLoaded( grid, function() {
+          // eslint-disable-next-line no-undef
+          const msnry = new Masonry( grid, {
+            itemSelector: '.grid-item',
+            columnWidth: '.grid-sizer',
+            percentPosition: true,
+            transitionDuration: '0.28s'
+            /* removed pixel-based gutter so CSS percentage padding/margins
+               control spacing responsively (no px used) */
+          });
+          // ensure layout on window resize with debounce
+          let rt;
+          window.addEventListener('resize', function(){
+            clearTimeout(rt);
+            rt = setTimeout(function(){ msnry.layout(); }, 150);
+          });
+        });
       })();
     </script>
   </body>
