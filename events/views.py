@@ -6,6 +6,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from .forms import RegistrationForm
 from django.urls import reverse
 from datetime import datetime, timedelta
+import json
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import Event, Country, Community
@@ -112,12 +113,41 @@ def login_view(request):
 def calendar_view(request):
     # pass available countries and communities for the calendar filters
     countries = Country.objects.all().order_by('name')
-    communities = Community.objects.all().order_by('name')
+    # determine communities to show in the calendar filters: if a country is selected
+    # (either via query param or defaulted from the user's profile) only show communities
+    # that belong to that country so users cannot pick communities from other countries.
+    # We'll set `communities` below after selected_country is computed.
     # pass along any current selections so template can pre-select them
-    selected_country = request.GET.get('country', '')
+    # if the user is logged in and hasn't provided a country filter, default to their profile.country
+    if 'country' in request.GET:
+        selected_country = request.GET.get('country', '')
+    else:
+        selected_country = ''
+        if request.user.is_authenticated:
+            try:
+                prof_country = request.user.profile.country
+                if prof_country:
+                    selected_country = str(prof_country.id)
+            except Exception:
+                # no profile or no country set; leave as empty
+                selected_country = ''
+
     selected_community = request.GET.get('community', '')
+    # Build the communities queryset now that we know the selected_country
+    if selected_country:
+        try:
+            cid = int(selected_country)
+            communities = Community.objects.filter(country_id=cid).order_by('name')
+        except ValueError:
+            # selected_country may be empty or not an integer; fall back to all
+            communities = Community.objects.all().order_by('name')
+    else:
+        communities = Community.objects.all().order_by('name')
     # define Bucharest sectors for the template to render the optgroup
     sectors_list = BUCHAREST_SECTORS
+
+    # Also provide a JSON dump of all communities for client-side filtering
+    all_communities = list(Community.objects.values('id', 'name', 'country_id').order_by('name'))
 
     return render(request, "events/calendar.html", {
         "countries": countries,
@@ -125,6 +155,8 @@ def calendar_view(request):
         "selected_country": selected_country,
         "selected_community": selected_community,
         "sectors_list": sectors_list,
+        "all_communities_json": json.dumps(all_communities),
+        "sectors_list_json": json.dumps(sectors_list),
     })
 
 
@@ -315,16 +347,24 @@ def event_detail(request, event_id):
 def upload_event_image(request, event_id):
     """Handle image uploads for a specific event. Only authenticated users may upload."""
     ev = get_object_or_404(Event, id=event_id, is_deleted=False)
-    form = EventImageForm(request.POST, request.FILES)
-    if form.is_valid():
-        img = form.save(commit=False)
-        img.event = ev
-        img.uploaded_by = request.user
-        img.save()
-        messages.success(request, 'Photo uploaded.')
+    # support multiple files via input name="images" (and fall back to single 'image')
+    files = request.FILES.getlist('images') or ([] if 'image' not in request.FILES else [request.FILES.get('image')])
+    uploaded = 0
+    for f in files:
+        try:
+            img = EventImage(event=ev, image=f, uploaded_by=request.user)
+            img.save()
+            uploaded += 1
+        except Exception:
+            # skip invalid files but continue processing others
+            continue
+
+    if uploaded:
+        messages.success(request, f"Uploaded {uploaded} photo{'' if uploaded==1 else 's'}.")
     else:
-        messages.error(request, 'Failed to upload photo. Please ensure the file is a valid image.')
-    return redirect(resolve_url('event_detail', event_id=event_id))
+        messages.error(request, 'Failed to upload photo(s). Please ensure the files are valid images.')
+    # send user back to the gallery view (so they can see uploaded images)
+    return redirect(resolve_url('event_gallery', event_id=event_id) + '#upload')
 
 
 def event_gallery(request, event_id):

@@ -119,6 +119,9 @@
     <script>
       document.addEventListener('DOMContentLoaded', () => {
         const calendarEl = document.getElementById('calendar');
+  // Preload full communities data for client-side filtering when country changes
+  const allCommunities = JSON.parse('{{ all_communities_json|escapejs }}');
+  const sectorsList = JSON.parse('{{ sectors_list_json|escapejs }}');
 
   const calendar = new FullCalendar.Calendar(calendarEl, {
           initialView: 'dayGridMonth',
@@ -196,6 +199,69 @@
         });
 
         calendar.render();
+
+        // Client-side community filtering: when country selection changes,
+        // rebuild the community dropdown so users cannot pick communities
+        // that belong to other countries.
+        (function(){
+          const countrySel = document.getElementById('id_country_filter');
+          const communitySel = document.getElementById('id_community_filter');
+          function rebuildCommunities(selectedCountry){
+            // clear existing options
+            while (communitySel.firstChild) communitySel.removeChild(communitySel.firstChild);
+            // add default option
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = '';
+            defaultOpt.textContent = 'All communities';
+            communitySel.appendChild(defaultOpt);
+
+            // filter communities by selectedCountry (selectedCountry is string of id)
+            const filtered = selectedCountry ? allCommunities.filter(c => String(c.country_id) === String(selectedCountry)) : allCommunities.slice();
+
+            // If any of the filtered communities match sectorsList, add a 'Bucharest' aggregate
+            const bucharestSectors = filtered.filter(c => sectorsList.includes(c.name));
+            if(bucharestSectors.length){
+              const buchOpt = document.createElement('option');
+              buchOpt.value = 'bucharest';
+              buchOpt.textContent = 'Bucharest (all sectors)';
+              communitySel.appendChild(buchOpt);
+
+              const optg = document.createElement('optgroup');
+              optg.label = 'Bucharest';
+              bucharestSectors.forEach(c => {
+                const o = document.createElement('option');
+                o.value = String(c.id);
+                o.textContent = c.name;
+                optg.appendChild(o);
+              });
+              communitySel.appendChild(optg);
+            }
+
+            // Add remaining communities that are not Bucharest sectors
+            filtered.filter(c => !sectorsList.includes(c.name)).forEach(c => {
+              const o = document.createElement('option');
+              o.value = String(c.id);
+              o.textContent = c.name;
+              communitySel.appendChild(o);
+            });
+
+            // preserve selected community when possible
+            const current = '{{ selected_community|escapejs }}';
+            if(current){
+              const match = Array.from(communitySel.options).find(opt => opt.value === current);
+              if(match) communitySel.value = current;
+            }
+          }
+
+          if(countrySel && communitySel){
+            countrySel.addEventListener('change', () => {
+              const val = countrySel.value;
+              rebuildCommunities(val);
+            });
+            // initial build to ensure client-side and server-side match
+            rebuildCommunities(countrySel.value || '{{ selected_country|escapejs }}');
+          }
+        })();
 
         // Ensure day numbers are styled correctly across FullCalendar variants.
         function styleDayNumbers() {

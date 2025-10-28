@@ -112,10 +112,10 @@
           {% if request.user.is_authenticated %}
             <form method="post" enctype="multipart/form-data" action="{% url 'upload_event_image' event.id %}" class="d-flex align-items-center upload-form">
               {% csrf_token %}
-              <label for="id_image_input" class="btn btn-primary upload-btn">📷 Add photo</label>
-              <input id="id_image_input" type="file" name="image" accept="image/*" class="d-none" required>
-              <span id="selected_filename" class="text-white small ms-2 upload-filename">No file chosen</span>
-              <button class="btn btn-sm btn-outline-light ms-2 upload-submit" type="submit">Send</button>
+              <label for="id_image_input" class="btn btn-primary upload-btn">📷 Add photos</label>
+              <input id="id_image_input" type="file" name="images" accept="image/*" class="d-none" multiple required>
+              <span id="selected_filename" class="text-white small ms-2 upload-filename">No files chosen</span>
+              <button class="btn btn-sm btn-primary ms-2 upload-submit" type="submit">Upload</button>
             </form>
             {% comment %} Allow owner or existing organizers to manage organizers via the edit page {% endcomment %}
           {% else %}
@@ -129,17 +129,23 @@
             const label = document.querySelector('.upload-btn');
             const filename = document.getElementById('selected_filename');
             if(input){
-              input.addEventListener('change', function(){
-                const f = input.files && input.files.length ? input.files[0].name : 'No file chosen';
-                filename.textContent = f;
-                // enable submit when a file is selected
+                input.addEventListener('change', function(){
+                  const count = input.files ? input.files.length : 0;
+                  if(count === 0){
+                    filename.textContent = 'No files chosen';
+                  } else if(count === 1){
+                    filename.textContent = input.files[0].name;
+                  } else {
+                    filename.textContent = `${count} files selected`;
+                  }
+                  // enable submit when files are selected
+                  const submit = document.querySelector('.upload-submit');
+                  if(submit) submit.disabled = !input.files.length;
+                });
+                // initialize submit state
                 const submit = document.querySelector('.upload-submit');
-                if(submit) submit.disabled = !input.files.length;
-              });
-              // initialize submit state
-              const submit = document.querySelector('.upload-submit');
-              if(submit) submit.disabled = true;
-            }
+                if(submit) submit.disabled = true;
+              }
           })();
         </script>
 

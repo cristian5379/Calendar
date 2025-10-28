@@ -125,6 +125,14 @@ class Country(models.Model):
 class Community(models.Model):
     """A community/region/organization users belong to. Managed by admin."""
     name = models.CharField(max_length=200, unique=True)
+    # Associate a community with a country so we can enforce country-scoped communities
+    country = models.ForeignKey(
+        'Country',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='communities'
+    )
 
     class Meta:
         verbose_name_plural = "communities"

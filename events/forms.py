@@ -86,6 +86,15 @@ class EventForm(forms.ModelForm):
 
         cleaned['start_time'] = start_dt
         cleaned['end_time'] = end_dt
+        # Validate that targeted communities (if chosen) belong to the selected country
+        country = cleaned.get('country')
+        targeted = cleaned.get('targeted_communities')
+        if country and targeted:
+            # any community without matching country will be rejected
+            mismatched = [c for c in targeted if c.country_id != country.id]
+            if mismatched:
+                raise forms.ValidationError('Selected targeted communities must belong to the selected country.')
+
         return cleaned
 
     def save(self, commit=True):
@@ -149,6 +158,16 @@ class RegistrationForm(UserCreationForm):
             raise forms.ValidationError('A user with that email already exists.')
         return email
 
+    def clean(self):
+        cleaned = super().clean()
+        country = cleaned.get('country')
+        community = cleaned.get('community')
+        if country and community:
+            # ensure community belongs to the selected country
+            if community.country_id != country.id:
+                raise forms.ValidationError('Selected community does not belong to the selected country.')
+        return cleaned
+
     def save(self, commit=True):
         User = get_user_model()
         first = self.cleaned_data.get('first_name', '')
@@ -185,6 +204,15 @@ class ProfileForm(forms.ModelForm):
         # allow empty selection (Profile.country/community are nullable)
         self.fields['country'].required = False
         self.fields['community'].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        country = cleaned.get('country')
+        community = cleaned.get('community')
+        if country and community:
+            if community.country_id != country.id:
+                raise forms.ValidationError('Selected community does not belong to the selected country.')
+        return cleaned
 
 
 class EventImageForm(forms.ModelForm):

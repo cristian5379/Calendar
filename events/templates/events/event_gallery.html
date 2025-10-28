@@ -22,13 +22,14 @@
         </div>
 
         {% if images %}
-          <div class="row">
+          <!-- Masonry-style gallery that fills the page and keeps images' aspect ratios -->
+          <div class="masonry">
             {% for img in images %}
-              <div class="col-sm-6 col-md-4 mb-3">
+              <div class="masonry-item">
                 <a href="{{ img.image.url }}" target="_blank">
-                  <img src="{{ img.image.url }}" alt="Photo" class="img-fluid rounded">
+                  <img src="{{ img.image.url }}" alt="Photo" class="gallery-thumb" loading="lazy">
                 </a>
-                <div class="text-white">Uploaded by: {% if img.uploaded_by %}{{ img.uploaded_by.username }}{% else %}anonymous{% endif %} — {{ img.created_at }}</div>
+                <div class="text-white small mt-1">Uploaded by: {% if img.uploaded_by %}{{ img.uploaded_by.username }}{% else %}anonymous{% endif %} — {{ img.created_at }}</div>
               </div>
             {% endfor %}
           </div>
@@ -38,13 +39,29 @@
 
         {% if request.user.is_authenticated %}
           <hr>
-          <h5 id="upload">Upload a photo</h5>
-          <form method="post" enctype="multipart/form-data" action="{% url 'upload_event_image' event.id %}">
+          <h5 id="upload">Upload photos</h5>
+          <form method="post" enctype="multipart/form-data" action="{% url 'upload_event_image' event.id %}" class="mb-3" id="gallery-upload-form">
             {% csrf_token %}
-            <div class="mb-2">
-              <input type="file" name="image" class="form-control" accept="image/*" required>
+            <div class="upload-dropzone p-4 mb-2 rounded" id="dropzone">
+              <input type="file" name="images" id="dz-input" accept="image/*" multiple class="d-none" required>
+              <div class="d-flex flex-column align-items-center text-center">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="mb-2">
+                  <path d="M12 16V8" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M8 12L12 8L16 12" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <rect x="3" y="3" width="18" height="14" rx="2" stroke="#fff" stroke-width="1.2"/>
+                </svg>
+                <strong class="text-white">Drag & drop images here, or <button type="button" class="btn btn-link text-decoration-none p-0" id="dz-browse">browse</button></strong>
+                <small class="text-white">You can upload multiple photos at once. Max file size depends on server settings.</small>
+              </div>
             </div>
-            <button class="btn btn-primary" type="submit">Upload</button>
+
+            <div id="dz-preview" class="d-flex flex-wrap gap-2 mb-2"></div>
+
+            <div class="d-flex align-items-center gap-2">
+              <button class="btn btn-primary" type="submit" id="dz-submit" disabled>Upload photos</button>
+              <button type="button" class="btn btn-outline-light" id="dz-clear">Clear</button>
+              <div id="dz-count" class="text-white small ms-2">No files selected</div>
+            </div>
           </form>
         {% endif %}
 
@@ -53,12 +70,55 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-      // If the page was opened with #upload anchor, focus the upload input for convenience
+      // Drag & drop + preview for gallery upload
       (function(){
-        if(window.location.hash === '#upload'){
-          const input = document.querySelector('input[type="file"][name="image"]');
-          if(input){
-            // scroll into view and focus
+        const dropzone = document.getElementById('dropzone');
+        const input = document.getElementById('dz-input');
+        const browseBtn = document.getElementById('dz-browse');
+        const preview = document.getElementById('dz-preview');
+        const submit = document.getElementById('dz-submit');
+        const clearBtn = document.getElementById('dz-clear');
+        const count = document.getElementById('dz-count');
+
+        function updateState(){
+          const files = input.files ? Array.from(input.files) : [];
+          preview.innerHTML = '';
+          if(files.length === 0){
+            count.textContent = 'No files selected';
+            submit.disabled = true;
+            return;
+          }
+          files.forEach(f => {
+            const url = URL.createObjectURL(f);
+            const img = document.createElement('img');
+            img.src = url;
+            img.className = 'dz-thumb me-1 mb-1';
+            preview.appendChild(img);
+          });
+          count.textContent = `${files.length} file(s) selected`;
+          submit.disabled = false;
+        }
+
+        if(dropzone){
+          dropzone.addEventListener('click', () => input.click());
+          browseBtn.addEventListener('click', () => input.click());
+
+          dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+          dropzone.addEventListener('dragleave', e => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+          dropzone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            if(e.dataTransfer && e.dataTransfer.files){
+              input.files = e.dataTransfer.files;
+              updateState();
+            }
+          });
+
+          input.addEventListener('change', updateState);
+          clearBtn.addEventListener('click', () => { input.value = ''; updateState(); });
+
+          // If opened with anchor, focus and scroll
+          if(window.location.hash === '#upload'){
             const el = document.getElementById('upload');
             if(el){ el.scrollIntoView({behavior: 'smooth', block: 'center'}); }
             try{ input.focus(); }catch(e){}
