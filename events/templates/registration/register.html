@@ -21,7 +21,7 @@
             <div class="logo" aria-hidden="true"></div>
             <div>
               <h1>Create account</h1>
-              <p class="mb-0">Pick a username and password (email not required)</p>
+              <p class="mb-0">Provide your name, email and a secure password</p>
             </div>
           </div>
         </div>
@@ -35,9 +35,21 @@
             {% csrf_token %}
 
             <div class="mb-3">
-              <label class="form-label">Username</label>
-              {{ form.username }}
-              {{ form.username.errors }}
+              <label class="form-label">Name</label>
+              {{ form.first_name }}
+              {{ form.first_name.errors }}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Family name</label>
+              {{ form.last_name }}
+              {{ form.last_name.errors }}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Email</label>
+              {{ form.email }}
+              {{ form.email.errors }}
             </div>
 
             <div class="mb-3">
@@ -49,12 +61,24 @@
             <div class="mb-3">
               <label class="form-label">Confirm password</label>
               {{ form.password2 }}
-+              {{ form.password2.errors }}
+              {{ form.password2.errors }}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Country</label>
+              {{ form.country }}
+              {{ form.country.errors }}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Communities</label>
+              {{ form.community }}
+              {{ form.community.errors }}
             </div>
 
             <div class="d-flex gap-2">
               <button type="submit" class="btn btn-primary">Create account</button>
-              <a href="{% url 'login' %}" class="btn btn-outline-light">Back to sign in</a>
+              <a href="{% url 'home' %}" class="btn btn-outline-light">Back to sign in</a>
             </div>
           </form>
         </div>

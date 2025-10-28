@@ -1,0 +1,47 @@
+{% load static %}
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Attendace - {{ event.title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{% static 'events/calendar.css' %}" rel="stylesheet">
+  </head>
+  <body>
+    <div class="page-wrap">
+      <div class="calendar-card p-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3>Attendace for: {{ event.title }}</h3>
+          <a class="btn btn-sm btn-outline-light" href="{% url 'event_detail' event.id %}">Back</a>
+        </div>
+
+        <p class="text-white">Mark which participants actually attended the event. This will be recorded as the event's "Attendace".</p>
+
+        <form method="post">
+          {% csrf_token %}
+          <ul class="list-group mb-3">
+            {% for u in participants %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>{{ u.get_full_name|default:u.username }}</div>
+                <div>
+                  <input type="checkbox" name="user_{{ u.id }}" id="user_{{ u.id }}" {% if u in event.attendees.all %}checked{% endif %} />
+                  <label for="user_{{ u.id }}" class="ms-1">Attendace</label>
+                </div>
+              </li>
+            {% empty %}
+              <li class="list-group-item text-white">No participants to mark.</li>
+            {% endfor %}
+          </ul>
+
+          <div class="d-flex gap-2">
+            <button class="btn btn-primary" type="submit">Save Attendace</button>
+            <a class="btn btn-outline-light" href="{% url 'event_detail' event.id %}">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

@@ -1,0 +1,70 @@
+{% load static %}
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gallery — {{ event.title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{% static 'events/calendar.css' %}" rel="stylesheet">
+  </head>
+  <body>
+    <div class="page-wrap">
+      <div class="calendar-card p-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3>Gallery — {{ event.title }}</h3>
+          <div>
+            <a class="btn btn-sm btn-outline-light me-2" href="{% url 'event_detail' event.id %}">Back</a>
+            {% if request.user.is_authenticated %}
+              <a class="btn btn-sm btn-primary" href="#upload">Upload photo</a>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if images %}
+          <div class="row">
+            {% for img in images %}
+              <div class="col-sm-6 col-md-4 mb-3">
+                <a href="{{ img.image.url }}" target="_blank">
+                  <img src="{{ img.image.url }}" alt="Photo" class="img-fluid rounded">
+                </a>
+                <div class="text-white">Uploaded by: {% if img.uploaded_by %}{{ img.uploaded_by.username }}{% else %}anonymous{% endif %} — {{ img.created_at }}</div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-white">No photos yet for this event.</p>
+        {% endif %}
+
+        {% if request.user.is_authenticated %}
+          <hr>
+          <h5 id="upload">Upload a photo</h5>
+          <form method="post" enctype="multipart/form-data" action="{% url 'upload_event_image' event.id %}">
+            {% csrf_token %}
+            <div class="mb-2">
+              <input type="file" name="image" class="form-control" accept="image/*" required>
+            </div>
+            <button class="btn btn-primary" type="submit">Upload</button>
+          </form>
+        {% endif %}
+
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // If the page was opened with #upload anchor, focus the upload input for convenience
+      (function(){
+        if(window.location.hash === '#upload'){
+          const input = document.querySelector('input[type="file"][name="image"]');
+          if(input){
+            // scroll into view and focus
+            const el = document.getElementById('upload');
+            if(el){ el.scrollIntoView({behavior: 'smooth', block: 'center'}); }
+            try{ input.focus(); }catch(e){}
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>

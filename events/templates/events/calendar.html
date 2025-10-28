@@ -31,14 +31,45 @@
             </div>
           </div>
 
-          <div>
+          <div class="d-flex align-items-center">
             <!-- small controls area; FullCalendar will render its toolbar inside the calendar container but this keeps header balanced -->
             <a href="#" class="btn btn-sm btn-outline-light me-2" onclick="location.reload();">Refresh</a>
+
+            <!-- Country filter -->
+            <select id="id_country_filter" class="form-select form-select-sm me-2" style="width:200px">
+              <option value="">All countries</option>
+              {% for c in countries %}
+                <option value="{{ c.id }}" data-flag="{{ c.flag_url|default:'' }}" {% if selected_country|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+              {% endfor %}
+            </select>
+
+            <!-- Community filter -->
+            <select id="id_community_filter" class="form-select form-select-sm me-2" style="width:200px">
+              <option value="">All communities</option>
+              <option value="bucharest" {% if selected_community == 'bucharest' %}selected{% endif %}>Bucharest (all sectors)</option>
+              {# Bucharest aggregate option and optgroup for sectors #}
+              <optgroup label="Bucharest">
+                {% for com in communities %}
+                  {% if com.name in sectors_list %}
+                    <option value="{{ com.id }}" {% if selected_community|stringformat:"s" == com.id|stringformat:"s" %}selected{% endif %}>{{ com.name }}</option>
+                  {% endif %}
+                {% endfor %}
+              </optgroup>
+              {% for com in communities %}
+                {% if com.name not in sectors_list %}
+                  <option value="{{ com.id }}" {% if selected_community|stringformat:"s" == com.id|stringformat:"s" %}selected{% endif %}>{{ com.name }}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
 
             {% if request.user.is_authenticated %}
               <div class="btn-group">
                 <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                  {{ request.user.username }}
+                  {% if request.user.first_name or request.user.last_name %}
+                    {{ request.user.first_name }} {{ request.user.last_name }}
+                  {% else %}
+                    {{ request.user.username }}
+                  {% endif %}
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
                   <li><a class="dropdown-item" href="{% url 'myevents' %}">My events</a></li>
@@ -57,7 +88,7 @@
           </div>
         </div>
 
-        <div id="calendar"></div>
+  <div id="calendar"></div>
       </div>
     </div>
 
@@ -70,10 +101,10 @@
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <p id="ev-time" class="text-muted mb-1"></p>
+            <p id="ev-time" class="text-white mb-1"></p>
             <h4 id="ev-title"></h4>
             <p id="ev-desc" class="mt-3"></p>
-            <div id="ev-extra" class="small text-muted"></div>
+            <div id="ev-extra" class="text-white"></div>
           </div>
           <div class="modal-footer border-0">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -89,7 +120,7 @@
       document.addEventListener('DOMContentLoaded', () => {
         const calendarEl = document.getElementById('calendar');
 
-        const calendar = new FullCalendar.Calendar(calendarEl, {
+  const calendar = new FullCalendar.Calendar(calendarEl, {
           initialView: 'dayGridMonth',
           themeSystem: 'standard',
           headerToolbar: {
@@ -135,6 +166,32 @@
               // fallback: do nothing or open the modal if id can't be determined
               console.warn('Could not determine original event id for navigation:', ev.id, ev.extendedProps);
             }
+          }
+        });
+
+        // helper to build query string from selected filters
+        function buildParams() {
+          const country = document.getElementById('id_country_filter').value;
+          const community = document.getElementById('id_community_filter').value;
+          const parts = [];
+          if(country) parts.push('country=' + encodeURIComponent(country));
+          if(community) parts.push('community=' + encodeURIComponent(community));
+          return parts.length ? ('?' + parts.join('&')) : '';
+        }
+
+        // initialize events source with any pre-selected filters
+        const initialParams = buildParams();
+        calendar.setOption('events', '/events-json/' + initialParams);
+
+        // when filter changes, update events source and refetch
+        ['id_country_filter', 'id_community_filter'].forEach(id => {
+          const el = document.getElementById(id);
+          if(el){
+            el.addEventListener('change', () => {
+              const params = buildParams();
+              calendar.setOption('events', '/events-json/' + params);
+              calendar.refetchEvents();
+            });
           }
         });
 

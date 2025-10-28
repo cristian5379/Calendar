@@ -13,7 +13,10 @@
       <div class="calendar-card p-3">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h3>My Events</h3>
-          <a class="btn btn-sm btn-outline-light" href="{% url 'calendar' %}">Back to calendar</a>
+          <div>
+            <a class="btn btn-sm btn-outline-light me-2" href="{% url 'edit_profile' %}">Edit profile</a>
+            <a class="btn btn-sm btn-outline-light" href="{% url 'calendar' %}">Back to calendar</a>
+          </div>
         </div>
 
         <div class="row">
@@ -45,6 +48,41 @@
                 {{ form.location.label_tag }}
                 {{ form.location }}
                 {{ form.location.errors }}
+              </div>
+
+              <div class="mb-2">
+                {{ form.event_type.label_tag }}
+                {{ form.event_type }}
+                {{ form.event_type.errors }}
+              </div>
+
+              <div class="mb-2">
+                {{ form.country.label_tag }}
+                {{ form.country }}
+                {{ form.country.errors }}
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label">Targeted communities</label>
+                {# Custom multi-select that includes Bucharest aggregate + optgroup for sectors #}
+                <select id="id_targeted_communities" name="targeted_communities" multiple class="form-control select2">
+                  <option value="bucharest" {% if 'bucharest' in selected_targeted %}selected{% endif %}>Bucharest (all sectors)</option>
+                  <optgroup label="Bucharest">
+                    {% for com in communities %}
+                      {% if com.name in sectors_list %}
+                        <option value="{{ com.id }}" {% if com.id|stringformat:"s" in selected_targeted %}selected{% endif %}>{{ com.name }}</option>
+                      {% endif %}
+                    {% endfor %}
+                  </optgroup>
+                  {% for com in communities %}
+                    {% if com.name not in sectors_list %}
+                      <option value="{{ com.id }}" {% if com.id|stringformat:"s" in selected_targeted %}selected{% endif %}>{{ com.name }}</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+                {% if form.targeted_communities.errors %}
+                  <div class="text-danger small">{{ form.targeted_communities.errors }}</div>
+                {% endif %}
               </div>
 
               <div class="form-check mb-3">
@@ -84,19 +122,20 @@
           </div>
 
           <div class="col-md-6">
-            <h5>Your events</h5>
+            <h5>Your future events</h5>
             {% if events %}
               <ul class="list-group mb-3">
                 {% for ev in events %}
                   <li class="list-group-item d-flex justify-content-between align-items-start">
                     <div>
                       <strong>{{ ev.title }}</strong>
-                      <div class="small text-muted">{{ ev.start_time }} — {{ ev.end_time }}</div>
+                      <div class="small">{{ ev.start_time }} — {{ ev.end_time }}</div>
                       {% if ev.location %}<div class="small">Location: {{ ev.location }}</div>{% endif %}
                       {% if ev.description %}<div class="mt-1">{{ ev.description }}</div>{% endif %}
                     </div>
                     <div>
-                      <form method="post" style="display:inline">
+                      <a class="btn btn-sm btn-secondary me-1" href="{% url 'event_edit' ev.id %}">Edit</a>
+                      <form method="post" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this event? It will be hidden from everyone but can be restored by an admin.');">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="event_id" value="{{ ev.id }}">
@@ -107,17 +146,17 @@
                 {% endfor %}
               </ul>
             {% else %}
-              <p class="text-muted">You have no events yet.</p>
+              <p class="text-white">You have no events yet.</p>
             {% endif %}
 
-            <h5>Participating events</h5>
+            <h5>Future Events</h5>
             {% if participating %}
               <ul class="list-group mb-3">
                 {% for ev in participating %}
                   <li class="list-group-item d-flex justify-content-between align-items-start">
                     <div>
                       <strong>{{ ev.title }}</strong>
-                      <div class="small text-muted">{{ ev.start_time }} — {{ ev.end_time }}</div>
+                      <div class="text-white">{{ ev.start_time }} — {{ ev.end_time }}</div>
                       {% if ev.location %}<div class="small">Location: {{ ev.location }}</div>{% endif %}
                     </div>
                     <div>
@@ -132,30 +171,37 @@
                 {% endfor %}
               </ul>
             {% else %}
-              <p class="text-muted">You are not participating in any upcoming events.</p>
+              <p class="text-white">You are not participating in any upcoming events.</p>
             {% endif %}
 
-            <h5>Participated events</h5>
-            {% if participated %}
-              <ul class="list-group">
-                {% for ev in participated %}
-                  <li class="list-group-item d-flex justify-content-between align-items-start">
-                    <div>
-                      <strong>{{ ev.title }}</strong>
-                      <div class="small text-muted">{{ ev.start_time }} — {{ ev.end_time }}</div>
-                    </div>
-                  </li>
-                {% endfor %}
-              </ul>
-            {% else %}
-              <p class="text-muted">You have not participated in any past events.</p>
-            {% endif %}
+            <div class="d-grid gap-2 mt-3">
+              <div class="d-grid gap-2">
+                <a class="btn btn-primary btn-lg mb-2" href="{% url 'participated_events' %}">Past events attended</a>
+                <a class="btn btn-secondary btn-lg" href="{% url 'organized_events' %}">Past events organized</a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- jQuery + Select2 for tokenized multi-select -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <style>
+      .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        background-color: #0d6efd;
+        border: 1px solid #0d6efd;
+        color: #fff;
+      }
+      .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+        color: rgba(255,255,255,0.9);
+      }
+    </style>
+
     <script>
       // Toggle end-date/time when single_day checkbox is checked
       (function(){
@@ -193,6 +239,25 @@
           setTimeout(sync, 50);
         }
       })();
-    </script>
+      </script>
+
+      <script>
+        // initialize Select2 on the targeted communities multi-select
+        (function(){
+          try{
+            $(function(){
+              const sel = $('#id_targeted_communities');
+              if(sel.length){
+                sel.select2({
+                  placeholder: 'Select targeted communities',
+                  width: '100%'
+                });
+              }
+            });
+          }catch(e){
+            console.warn('Select2 not available', e);
+          }
+        })();
+      </script>
   </body>
 </html>

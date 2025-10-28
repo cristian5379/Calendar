@@ -31,7 +31,7 @@
         <div class="p-4">
           {% if request.user.is_authenticated %}
             <h4 class="mb-3">Welcome, {{ request.user.get_full_name|default:request.user.username }}</h4>
-            <p class="text-muted">You are signed in. Go to your calendar or sign out.</p>
+            <p class="text-white">You are signed in. Go to your calendar or sign out.</p>
             <a class="btn btn-primary me-2" href="{% url 'calendar' %}">My Calendar</a>
             <form method="post" action="{% url 'logout' %}" style="display:inline">
               {% csrf_token %}
@@ -39,7 +39,7 @@
             </form>
           {% else %}
             <h4 class="mb-3">Welcome</h4>
-            <p class="text-muted">Please sign in to access your personal calendar.</p>
+            <p class="text-white">Please sign in to access your personal calendar.</p>
 
             <form method="post" action="{% url 'home' %}">
               {% csrf_token %}
@@ -51,9 +51,9 @@
               {% endif %}
 
               <div class="mb-3">
-                <label class="form-label">Username</label>
-                {{ form.username }}
-                {{ form.username.errors }}
+                <label class="form-label">Email</label>
+                {{ form.email }}
+                {{ form.email.errors }}
               </div>
               <div class="mb-3">
                 <label class="form-label">Password</label>
@@ -62,7 +62,8 @@
               </div>
               <div class="d-flex gap-2">
                 <button class="btn btn-primary" type="submit">Log in</button>
-                <a class="btn btn-outline-light" href="{% url 'login' %}?next={% url 'calendar' %}">Open login page</a>
+                <a class="btn btn-outline-light" href="{% url 'register' %}">Create account</a>
+                <a class="btn btn-outline-light" href="{% url 'calendar' %}">View as guest</a>
               </div>
             </form>
           {% endif %}

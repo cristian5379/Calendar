@@ -1,0 +1,43 @@
+{% load static %}
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Participated events</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{% static 'events/calendar.css' %}" rel="stylesheet">
+  </head>
+  <body>
+    <div class="page-wrap">
+      <div class="calendar-card p-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3>Participated events</h3>
+          <a class="btn btn-sm btn-outline-light" href="{% url 'myevents' %}">Back to my events</a>
+        </div>
+
+        {% if participated %}
+          <ul class="list-group">
+            {% for ev in participated %}
+              <li class="list-group-item d-flex justify-content-between align-items-start">
+                <div>
+                  <strong>{{ ev.title }}</strong>
+                  <div class="text-white">{{ ev.start_time }} — {{ ev.end_time }}</div>
+                  {% if ev.location %}<div class="small">Location: {{ ev.location }}</div>{% endif %}
+                  {% if ev.description %}<div class="mt-1">{{ ev.description }}</div>{% endif %}
+                </div>
+                <div>
+                  <a class="btn btn-sm btn-outline-light" href="{% url 'event_detail' ev.id %}">View</a>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-white">You haven't participated in any past events.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
