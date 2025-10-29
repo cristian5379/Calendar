@@ -616,7 +616,7 @@ html::before, body::before {
   box-sizing: border-box;
   /* ensure floats are contained */
   overflow: hidden;
-
+  position: relative;
 }
 .grid-sizer {
   width: 20%; /* default 4 columns (percent based) */

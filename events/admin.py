@@ -67,6 +67,16 @@ class EventTypeAdmin(admin.ModelAdmin):
 
 @admin.register(EventImage)
 class EventImageAdmin(admin.ModelAdmin):
-    list_display = ("event", "uploaded_by", "created_at")
+    list_display = ("event", "filename", "uploaded_by", "created_at")
     list_filter = ("created_at",)
-    search_fields = ("event__title", "uploaded_by__username")
+    # allow admins to search by the event title, uploader username and the
+    # stored file path / filename (image field stores the path as a string)
+    search_fields = ("event__title", "uploaded_by__username", "image")
+
+    def filename(self, obj):
+        """Return only the image filename (not full upload path)."""
+        try:
+            return obj.image.name.rsplit('/', 1)[-1]
+        except Exception:
+            return ''
+    filename.short_description = 'Filename'
