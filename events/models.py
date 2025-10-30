@@ -74,6 +74,17 @@ class Event(models.Model):
         related_name='events'
     )
 
+    # Recurrence support (simple patterns). Only superusers should set these.
+    RECURRENCE_CHOICES = [
+        ('none', 'None'),
+        ('daily', 'Daily'),
+        ('weekly', 'Weekly'),
+        ('monthly', 'Monthly'),
+    ]
+    recurrence_pattern = models.CharField(max_length=20, choices=RECURRENCE_CHOICES, default='none')
+    recurrence_interval = models.PositiveIntegerField(default=1, help_text='Interval for recurrence (e.g., every N days/weeks/months)')
+    recurrence_end_date = models.DateField(null=True, blank=True, help_text='Optional end date for the recurrence')
+
     def __str__(self):
         return f"{self.title} ({self.start_time:%Y-%m-%d %H:%M})"
 

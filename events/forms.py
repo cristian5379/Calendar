@@ -1,5 +1,7 @@
 from django import forms
 from .models import Event
+from .models import Country, Community, Profile, EventImage
+from .models import EventType
 from datetime import datetime, time
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
@@ -21,7 +23,7 @@ class EventForm(forms.ModelForm):
 
     class Meta:
         model = Event
-        fields = ["title", "description", "location", "event_type", "country", "targeted_communities", "organizers"]
+        fields = ["title", "description", "location", "event_type", "country", "targeted_communities", "organizers", "recurrence_pattern", "recurrence_interval", "recurrence_end_date"]
         widgets = {
             "title": forms.TextInput(attrs={"class": "form-control"}),
             "description": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
@@ -30,10 +32,14 @@ class EventForm(forms.ModelForm):
             "country": forms.Select(attrs={"class": "form-control"}),
             # use a multi-select <select> which will be enhanced by Select2 to show tokenized selections
             "targeted_communities": forms.SelectMultiple(attrs={"class": "form-control select2"}),
+            "recurrence_pattern": forms.Select(attrs={"class": "form-control"}),
+            "recurrence_interval": forms.NumberInput(attrs={"class": "form-control", "min": 1}),
+            "recurrence_end_date": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
         }
 
     def __init__(self, *args, **kwargs):
-        # accept instance to initialize date/time fields
+        # accept instance and optional `user` kwarg to control which fields are shown
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk:
             st = self.instance.start_time
@@ -57,6 +63,13 @@ class EventForm(forms.ModelForm):
             self.fields['start_time_only'].initial = time(hour=9, minute=0)
             self.fields['end_time_only'].initial = time(hour=10, minute=0)
             self.fields['single_day'].initial = True
+
+        # Recurrence fields should only be editable by superusers.
+        if not (self.user and getattr(self.user, 'is_superuser', False)):
+            # remove recurrence fields from the form for non-superusers
+            for f in ('recurrence_pattern', 'recurrence_interval', 'recurrence_end_date'):
+                if f in self.fields:
+                    self.fields.pop(f)
 
     def clean(self):
         cleaned = super().clean()
@@ -94,6 +107,14 @@ class EventForm(forms.ModelForm):
             mismatched = [c for c in targeted if c.country_id != country.id]
             if mismatched:
                 raise forms.ValidationError('Selected targeted communities must belong to the selected country.')
+
+        # Validate recurrence fields if present (only available to superusers)
+        if 'recurrence_pattern' in self.fields:
+            pattern = cleaned.get('recurrence_pattern')
+            interval = cleaned.get('recurrence_interval')
+            if pattern and pattern != 'none':
+                if not interval or interval < 1:
+                    raise forms.ValidationError('Recurrence interval must be a positive integer.')
 
         return cleaned
 
@@ -242,3 +263,18 @@ class NameLoginForm(forms.Form):
 
 # maintain backward-compatible name
 EmailLoginForm = NameLoginForm
+
+
+class EventFilterForm(forms.Form):
+    """Simple filter form for events lists (past participated / organized)."""
+    name = forms.CharField(required=False, widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Title contains"}))
+    location = forms.CharField(required=False, widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Location contains"}))
+    event_type = forms.ModelChoiceField(queryset=EventType.objects.all(), required=False, empty_label='Any type', widget=forms.Select(attrs={"class": "form-control"}))
+
+    def clean_name(self):
+        v = self.cleaned_data.get('name')
+        return v.strip() if v else v
+
+    def clean_location(self):
+        v = self.cleaned_data.get('location')
+        return v.strip() if v else v

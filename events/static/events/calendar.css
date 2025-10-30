@@ -431,6 +431,11 @@ html, body {
   box-sizing: border-box !important;
 }
 
+.calendar-card .fc {
+  --fc-today-bg-color: rgba(0, 0, 0, 0.305);           /* or any color you want */
+  /* e.g. --fc-today-bg-color: rgba(0,0,0,0.06); */
+}
+
 /* Robust background layer: use a fixed pseudo-element so the reflected gradient
    appears even if some other element accidentally paints a solid background
    on the root or body. This is placed last so it wins in the cascade. */

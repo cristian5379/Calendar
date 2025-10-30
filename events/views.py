@@ -11,6 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import Event, Country, Community
 from .forms import EventForm, ProfileForm
+from .forms import EventFilterForm
 from django.utils import timezone
 from django.db.models import Q
 from django.urls import reverse
@@ -21,6 +22,7 @@ from .forms import EventImageForm
 from .models import EventImage
 from django.views.decorators.http import require_POST
 from django.shortcuts import resolve_url
+from django.core.paginator import Paginator
 
 # Bucharest sectors used in several places (calendar filters, events filtering, and forms)
 BUCHAREST_SECTORS = ['Sector 1', 'Sector 2', 'Sector 3', 'Sector 4', 'Sector 5', 'Sector 6']
@@ -178,7 +180,7 @@ def myevents_view(request):
                 new_vals = [v for v in vals if v != 'bucharest'] + [str(i) for i in sector_ids]
                 posted.setlist('targeted_communities', new_vals)
 
-        form = EventForm(posted)
+        form = EventForm(posted, user=request.user)
         if form.is_valid():
             ev = form.save(commit=False)
             ev.owner = user
@@ -210,12 +212,16 @@ def myevents_view(request):
         # Do not show a flash message when leaving from the My Events page
         return redirect('myevents')
     else:
-        form = EventForm()
+        form = EventForm(user=request.user)
 
-    # Owned events
-    # Only show upcoming events that the user is hosting (end_time >= now)
+    # Owned events and events where the user is listed as an organizer
+    # Only show upcoming events that the user is hosting or organizing (end_time >= now)
     now = timezone.now()
-    events = Event.objects.filter(owner=user, end_time__gte=now, is_deleted=False).order_by('start_time')
+    events = Event.objects.filter(
+        Q(owner=user) | Q(organizers=user),
+        end_time__gte=now,
+        is_deleted=False
+    ).distinct().order_by('start_time')
 
     # Events where the user is a participant
     now = timezone.now()
@@ -395,7 +401,7 @@ def event_edit(request, event_id):
                 new_vals = [v for v in vals if v != 'bucharest'] + [str(i) for i in sector_ids]
                 posted.setlist('targeted_communities', new_vals)
 
-        form = EventForm(posted, instance=ev)
+        form = EventForm(posted, instance=ev, user=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, 'Event updated.')
@@ -403,7 +409,7 @@ def event_edit(request, event_id):
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
-        form = EventForm(instance=ev)
+        form = EventForm(instance=ev, user=request.user)
 
     # supply communities and sectors_list for the custom multi-select rendering and
     # compute selected_targeted to pre-select options (from POST when bound, else from instance)
@@ -449,8 +455,34 @@ def participated_view(request):
     """Show events the user has participated in (past events)."""
     user = request.user
     now = timezone.now()
-    participated = Event.objects.filter(participants=user, end_time__lt=now, is_deleted=False).order_by('-start_time')
-    return render(request, 'events/participated.html', {'participated': participated})
+    # apply filters from GET
+    form = EventFilterForm(request.GET or None)
+    participated_qs = Event.objects.filter(participants=user, end_time__lt=now, is_deleted=False)
+    if form.is_valid():
+        name = form.cleaned_data.get('name')
+        location = form.cleaned_data.get('location')
+        ev_type = form.cleaned_data.get('event_type')
+        if name:
+            participated_qs = participated_qs.filter(title__icontains=name)
+        if location:
+            participated_qs = participated_qs.filter(location__icontains=location)
+        if ev_type:
+            participated_qs = participated_qs.filter(event_type=ev_type)
+
+    participated_qs = participated_qs.order_by('-start_time')
+
+    # pagination
+    paginator = Paginator(participated_qs, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # build GET params without page to preserve filters in pagination links
+    params = request.GET.copy()
+    if 'page' in params:
+        params.pop('page')
+    get_params = params.urlencode()
+
+    return render(request, 'events/participated.html', {'participated': page_obj.object_list, 'form': form, 'page_obj': page_obj, 'get_params': get_params})
 
 
 @login_required
@@ -459,13 +491,38 @@ def organized_view(request):
     user = request.user
     now = timezone.now()
     # include events where the user is the owner or listed in the organizers M2M
-    organized = Event.objects.filter(
+    organized_qs = Event.objects.filter(
         Q(owner=user) | Q(organizers=user),
         end_time__lt=now,
         is_deleted=False
-    ).distinct().order_by('-start_time')
+    ).distinct()
 
-    return render(request, 'events/organized.html', {'organized': organized})
+    # apply filters from GET
+    form = EventFilterForm(request.GET or None)
+    if form.is_valid():
+        name = form.cleaned_data.get('name')
+        location = form.cleaned_data.get('location')
+        ev_type = form.cleaned_data.get('event_type')
+        if name:
+            organized_qs = organized_qs.filter(title__icontains=name)
+        if location:
+            organized_qs = organized_qs.filter(location__icontains=location)
+        if ev_type:
+            organized_qs = organized_qs.filter(event_type=ev_type)
+
+    organized_qs = organized_qs.order_by('-start_time')
+
+    # pagination
+    paginator = Paginator(organized_qs, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    params = request.GET.copy()
+    if 'page' in params:
+        params.pop('page')
+    get_params = params.urlencode()
+
+    return render(request, 'events/organized.html', {'organized': page_obj.object_list, 'form': form, 'page_obj': page_obj, 'get_params': get_params})
 
 
 @login_required
