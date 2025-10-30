@@ -25,7 +25,7 @@
       <div class="calendar-card">
         <div class="calendar-header">
           <div class="brand">
-            <div class="logo" aria-hidden="true"></div>
+            <img src="{% static 'events/icons/class-logo.svg' %}" alt="Class logo" class="logo" />
             <div>
               <h1>Events Calendar</h1>
             </div>
@@ -271,7 +271,7 @@
           const bubbleColor = (root.getPropertyValue('--day-bubble-color') || '#ffffff').trim();
           const todayBg = (root.getPropertyValue('--day-today-bg') || '#170b45').trim();
           const todayBoxShadow = (root.getPropertyValue('--day-today-box-shadow') || '0 8px 24px rgba(6,182,212,0.24)').trim();
-            const bubbleSize = (root.getPropertyValue('--day-bubble-size') || '34px').trim();
+          const bubbleSize = (root.getPropertyValue('--day-bubble-size') || '34px').trim();
 
           // selectors that might contain the day number across versions
           const selectors = [

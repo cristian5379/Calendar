@@ -137,7 +137,14 @@ html, body {
   gap:12px;
 }
 .brand .logo{
-  width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#06b6d4);display:inline-block;box-shadow:0 4px 12px rgba(79,70,229,0.25);
+  width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#06b6d4);display:inline-block;box-shadow:0 4px 12px rgba(79,70,229,0.25);overflow:hidden;
+}
+.brand .logo img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+  background:transparent;
 }
 .brand h1{font-size:1.05rem;margin:0;font-weight:600}
 .brand p{margin:0;font-size:0.8rem;color:var(--muted)}
@@ -191,7 +198,7 @@ html, body {
 .fc .fc-event, .fc .fc-daygrid-event {
   border: 0;
   font-weight: 600;
-  /* Event text should be dark for readability on light event backgrounds */
+  /* Event text should be white for readability on light event backgrounds */
   color: #fff !important;
   box-shadow: 0 2px 6px rgba(2,6,23,0.45);
   border-radius: 8px;
@@ -340,8 +347,8 @@ html, body {
 /* Today's number gets a filled teal circle */
 .fc .fc-day-today .fc-daygrid-day-number {
   background: var(--day-today-bg) !important;
-  color: var(--day-bubble-color) !important;
-  box-shadow: var(--day-today-box-shadow) !important;
+  color: var(--day-bubble-color);
+  box-shadow: var(--day-today-box-shadow);
   box-sizing: border-box !important;
 }
 
@@ -419,8 +426,8 @@ html, body {
 .calendar-card .fc .fc-day-today .fc-daygrid-day-number,
 .calendar-card .fc .fc-day-today .fc-daygrid-day-top a {
   background: var(--day-today-bg) !important;
-  color: var(--day-bubble-color) !important;
-  box-shadow: var(--day-today-box-shadow) !important;
+  color: var(--day-bubble-color);
+  /*box-shadow: var(--day-today-box-shadow);*/
   box-sizing: border-box !important;
 }
 
