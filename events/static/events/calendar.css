@@ -490,20 +490,24 @@ html::before, body::before {
   background: var(--accent) !important;
 }
 
+.select2{
+  color:#000000;
+}
+
 /* Select2 overrides: the page forces white text in many places; ensure Select2 dropdown
    uses dark text on a light background so options are readable. We apply high-specificity
    rules with !important to override the global color forcing in .calendar-card. */
 .select2-container--default .select2-dropdown,
 .select2-container--default .select2-results {
   background-color: #fff !important;
-  color: #fff !important;
+  color: #000000 !important;
 }
 .select2-container--default .select2-results__option {
-  color: #fff !important;
+  color: #000000 !important;
 }
 .select2-container--default .select2-results__option--highlighted {
   background-color: #e9f5ff !important; /* light blue highlight */
-  color: #fff !important;
+  color: #000000 !important;
 }
 /* Ensure the dropdown appears above the translucent card */
 .select2-container--open {
@@ -524,7 +528,7 @@ html::before, body::before {
 /* Login form input fields */
 #id_username, #id_password {
   background: rgba(255,255,255,0.9) !important;
-  color: var(--text) !important;
+  color: var(--text-box) !important;
   border: 1px solid rgba(0,0,0,0.1) !important;
 }
 
