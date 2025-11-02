@@ -25,7 +25,14 @@ SECRET_KEY = 'django-insecure-*e9lr@#0@-w=5_ku&u&3myl$lx%d2$w6+(ikh)+(q@szl%*4vw
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "86.124.42.127",
+    "10.141.227.2",
+    "localhost",
+    "127.0.0.1",
+    "::1",
+    "bahaicalendar.duckdns.org",
+]
 
 
 # Application definition
@@ -119,12 +126,23 @@ LOGIN_REDIRECT_URL = '/calendar/'
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Media files (uploaded by users)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+ALLOWED_HOSTS = ["bahaicalendar.duckdns.org", "127.0.0.1", "localhost"]
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
+
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+CSRF_TRUSTED_ORIGINS = ["https://bahaicalendar.duckdns.org"]
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

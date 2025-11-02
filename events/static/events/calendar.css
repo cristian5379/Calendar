@@ -326,6 +326,34 @@ html, body {
   .brand p{display:none}
 }
 
+/* Improve responsiveness of header controls and selects */
+.calendar-header .d-flex {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Ensure selects and buttons don't overflow on small screens */
+.calendar-header .form-select,
+.calendar-header .btn,
+.calendar-header .btn-group {
+  max-width: 100%;
+}
+
+/* On very small screens make controls stack and selects full width */
+@media (max-width: 576px) {
+  .calendar-header { align-items: stretch; padding: 12px; }
+  .calendar-header .d-flex { width: 100%; justify-content: flex-start; }
+  .calendar-header .form-select { width: 100% !important; margin-bottom: 6px; }
+  .calendar-header .btn { width: auto; }
+  .brand { margin-bottom: 8px; }
+  .brand h1 { font-size: 1rem; }
+  /* Reduce calendar padding and min-height to better fit mobile viewports */
+  #calendar { padding: 8px; min-height: 60vh; }
+  .page-wrap { margin: 12px auto; padding: 12px; }
+}
+
 /* Make the day numbers more stylish: rounded badges, teal accent, larger and clearer */
 .fc .fc-daygrid-day-top {
   padding: 6px 8px 0 8px; /* give room for the badge */
