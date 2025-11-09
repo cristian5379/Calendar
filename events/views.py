@@ -26,6 +26,7 @@ import io, zipfile, os
 from django.utils.text import slugify
 from django.shortcuts import resolve_url
 from django.core.paginator import Paginator
+import uuid
 
 # Bucharest sectors used in several places (calendar filters, events filtering, and forms)
 BUCHAREST_SECTORS = ['Sector 1', 'Sector 2', 'Sector 3', 'Sector 4', 'Sector 5', 'Sector 6']
@@ -375,6 +376,13 @@ def upload_event_image(request, event_id):
     uploaded = 0
     for f in files:
         try:
+            # generate a randomized filename to avoid collisions
+            original_name = getattr(f, 'name', '')
+            _, ext = os.path.splitext(original_name or '')
+            if not ext:
+                # default to .jpg if extension missing
+                ext = '.jpg'
+            f.name = f"{uuid.uuid4().hex}{ext}"
             img = EventImage(event=ev, image=f, uploaded_by=request.user)
             img.save()
             uploaded += 1
@@ -441,6 +449,53 @@ def download_selected_images(request, event_id):
     response = HttpResponse(buf.getvalue(), content_type='application/zip')
     response['Content-Disposition'] = f'attachment; filename="{download_name}"'
     return response
+
+
+
+@login_required
+@require_POST
+def delete_selected_images(request, event_id):
+    """Delete selected EventImage objects for an event.
+
+    Permissions: image is deleted when the requester is either the event owner,
+    the image uploader, or a superuser. Returns JSON with deleted ids when
+    called via AJAX; otherwise redirects back to the gallery with a message.
+    """
+    ev = get_object_or_404(Event, id=event_id, is_deleted=False)
+    # support both form-encoded and JSON bodies
+    ids = request.POST.getlist('selected_images')
+    if not ids:
+        try:
+            import json as _json
+            payload = _json.loads(request.body.decode('utf-8') or '{}')
+            ids = payload.get('selected_images', [])
+        except Exception:
+            ids = []
+
+    imgs = EventImage.objects.filter(id__in=ids, event=ev)
+    deleted = []
+    for img in imgs:
+        # allow delete if owner of event, uploader, or superuser
+        if request.user.is_superuser or request.user == ev.owner or request.user == img.uploaded_by:
+            try:
+                # remove file from storage first
+                img.image.delete(save=False)
+            except Exception:
+                pass
+            deleted.append(str(img.id))
+            img.delete()
+
+    from django.http import JsonResponse
+    from django.contrib import messages
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'deleted': deleted, 'deleted_count': len(deleted)})
+    else:
+        if deleted:
+            messages.success(request, f"Deleted {len(deleted)} image(s).")
+        else:
+            messages.error(request, "No images were deleted. You may not have permission.")
+        return redirect(reverse('event_gallery', args=[event_id]))
 
 
 @login_required

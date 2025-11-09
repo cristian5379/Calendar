@@ -43,6 +43,7 @@
             <div class="d-flex mb-2">
               <div class="flex-grow-1"></div>
               <button id="download-selected" type="submit" class="btn btn-sm btn-success ms-2" disabled>Download selected</button>
+              <button id="delete-selected" type="button" class="btn btn-sm btn-danger ms-2" disabled>Delete selected</button>
             </div>
             <div class="grid" id="gallery-grid">
             <div class="grid-sizer"></div>
@@ -249,6 +250,124 @@
           grid.addEventListener('change', function(e){ if(e.target && e.target.classList.contains('img-select-input')) updateDownloadButton(); });
           // initial state
           updateDownloadButton();
+
+          // Intercept the download form submission and trigger separate downloads
+          const downloadForm = document.getElementById('download-form');
+          if(downloadForm){
+            downloadForm.addEventListener('submit', async function(ev){
+              ev.preventDefault();
+              const btn = document.getElementById('download-selected');
+              if(!btn) return;
+              const selectedItems = Array.from(grid.querySelectorAll('.grid-item')).filter(it => {
+                const chk = it.querySelector('.img-select-input');
+                return chk && chk.checked;
+              });
+              if(selectedItems.length === 0){
+                // nothing selected; give quick feedback
+                btn.blur();
+                return;
+              }
+
+              // disable while downloading
+              const origText = btn.textContent;
+              btn.disabled = true;
+              btn.textContent = `Downloading 0/${selectedItems.length}...`;
+
+              let completed = 0;
+              // helper to derive filename from URL
+              function filenameFromUrl(u){
+                try{ const p = new URL(u, window.location.href).pathname; return p.split('/').pop() || 'image'; }catch(e){ return 'image'; }
+              }
+
+              for(const item of selectedItems){
+                const imgEl = item.querySelector('img.gallery-thumb');
+                if(!imgEl) { completed++; btn.textContent = `Downloading ${completed}/${selectedItems.length}...`; continue; }
+                const src = imgEl.src;
+                try{
+                  const resp = await fetch(src, { credentials: 'same-origin' });
+                  if(!resp.ok) throw new Error('fetch failed');
+                  const blob = await resp.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = filenameFromUrl(src);
+                  document.body.appendChild(a);
+                  a.click();
+                  // cleanup
+                  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
+                }catch(err){
+                  // continue to next image on error
+                }finally{
+                  completed++;
+                  btn.textContent = `Downloading ${completed}/${selectedItems.length}...`;
+                }
+                // small pause to avoid browser blocking multiple rapid downloads
+                await new Promise(r => setTimeout(r, 180));
+              }
+
+              // restore button
+              btn.textContent = origText;
+              btn.disabled = false;
+            });
+          }
+
+          // Delete selected images via AJAX
+          const deleteBtn = document.getElementById('delete-selected');
+          function updateDeleteButton(){
+            if(!deleteBtn) return;
+            const any = Array.from(grid.querySelectorAll('.img-select-input')).some(i => i.checked);
+            deleteBtn.disabled = !any;
+          }
+          if(deleteBtn){
+            deleteBtn.addEventListener('click', async function(){
+              const selectedIds = Array.from(grid.querySelectorAll('.img-select-input:checked')).map(i => i.value);
+              if(selectedIds.length === 0) return;
+              if(!confirm(`Delete ${selectedIds.length} selected image(s)? This cannot be undone.`)) return;
+
+              // disable while processing
+              deleteBtn.disabled = true;
+              deleteBtn.textContent = `Deleting 0/${selectedIds.length}...`;
+
+              const csrfEl = downloadForm ? downloadForm.querySelector('input[name="csrfmiddlewaretoken"]') : null;
+              const csrf = csrfEl ? csrfEl.value : '';
+              const deleteUrl = downloadForm ? downloadForm.dataset.deleteUrl : null;
+              if(!deleteUrl){ alert('Delete URL not configured.'); return; }
+
+              const formData = new FormData();
+              if(csrf) formData.append('csrfmiddlewaretoken', csrf);
+              selectedIds.forEach(id => formData.append('selected_images', id));
+
+              try{
+                const resp = await fetch(deleteUrl, { method: 'POST', body: formData, credentials: 'same-origin', headers: {'X-Requested-With': 'XMLHttpRequest'} });
+                if(!resp.ok) throw new Error('request failed');
+                const data = await resp.json();
+                const deleted = data.deleted || [];
+                let i=0;
+                for(const id of deleted){
+                  const el = grid.querySelector(`[data-img-id="${id}"]`);
+                  if(el){
+                    try{ msnry.remove(el); }catch(e){ el.remove(); }
+                  }
+                  i++;
+                  deleteBtn.textContent = `Deleting ${i}/${deleted.length}...`;
+                }
+                // final layout
+                try{ msnry.layout(); }catch(e){}
+              }catch(err){
+                alert('Failed to delete selected images.');
+              }finally{
+                deleteBtn.textContent = 'Delete selected';
+                deleteBtn.disabled = false;
+                // update buttons state
+                updateDownloadButton();
+                updateDeleteButton();
+              }
+            });
+          }
+
+          // make sure delete button state follows selections
+          grid.addEventListener('change', function(e){ if(e.target && e.target.classList.contains('img-select-input')) updateDeleteButton(); });
+          updateDeleteButton();
         });
       })();
     </script>

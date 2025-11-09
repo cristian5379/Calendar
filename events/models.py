@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+import uuid
 
 class Event(models.Model):
     owner = models.ForeignKey(
@@ -10,6 +11,8 @@ class Event(models.Model):
         related_name='events'
     )
     title = models.CharField(max_length=200)
+    # stable unique public id for events to avoid mixing up similar titles
+    public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     description = models.TextField(blank=True)
     location = models.CharField(max_length=200, blank=True)
     start_time = models.DateTimeField()
@@ -89,7 +92,7 @@ class Event(models.Model):
     recurrence_end_date = models.DateField(null=True, blank=True, help_text='Optional end date for the recurrence')
 
     def __str__(self):
-        return f"{self.title} ({self.start_time:%Y-%m-%d %H:%M})"
+        return f"{self.title} ({self.start_time:%Y-%m-%d %H:%M}) [{self.public_id}]"
 
 
 class EventType(models.Model):
