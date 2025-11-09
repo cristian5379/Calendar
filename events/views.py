@@ -21,6 +21,9 @@ from .forms import NameLoginForm
 from .forms import EventImageForm
 from .models import EventImage
 from django.views.decorators.http import require_POST
+from django.http import HttpResponse
+import io, zipfile, os
+from django.utils.text import slugify
 from django.shortcuts import resolve_url
 from django.core.paginator import Paginator
 
@@ -391,6 +394,53 @@ def event_gallery(request, event_id):
     ev = get_object_or_404(Event, id=event_id, is_deleted=False)
     images = ev.images.all()
     return render(request, 'events/event_gallery.html', {'event': ev, 'images': images})
+
+
+@login_required
+@require_POST
+def download_selected_images(request, event_id):
+    """Bundle selected EventImage files into a ZIP and return as an attachment.
+
+    Expects POST with selected_images as repeated parameters (e.g. selected_images=1&selected_images=2).
+    Only images that belong to the specified event are included.
+    """
+    ev = get_object_or_404(Event, id=event_id, is_deleted=False)
+    ids = request.POST.getlist('selected_images')
+    if not ids:
+        # nothing selected — redirect back with a message
+        from django.contrib import messages
+        messages.error(request, 'No images were selected for download.')
+        return redirect(reverse('event_gallery', args=[event_id]))
+
+    imgs = EventImage.objects.filter(id__in=ids, event=ev)
+    if not imgs.exists():
+        from django.contrib import messages
+        messages.error(request, 'No valid images found to download.')
+        return redirect(reverse('event_gallery', args=[event_id]))
+
+    # create ZIP in memory
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+        existing = set()
+        for img in imgs:
+            try:
+                fname = os.path.basename(img.image.name)
+                # avoid duplicate names inside the archive
+                arcname = fname
+                if arcname in existing:
+                    arcname = f"{img.id}-{fname}"
+                existing.add(arcname)
+                with img.image.open('rb') as fh:
+                    zf.writestr(arcname, fh.read())
+            except Exception:
+                # skip files we can't read and continue
+                continue
+
+    buf.seek(0)
+    download_name = f"{slugify(ev.title) or 'event'}-images.zip"
+    response = HttpResponse(buf.getvalue(), content_type='application/zip')
+    response['Content-Disposition'] = f'attachment; filename="{download_name}"'
+    return response
 
 
 @login_required

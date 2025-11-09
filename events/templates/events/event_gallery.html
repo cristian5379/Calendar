@@ -36,8 +36,15 @@
         </div>
 
         {% if images %}
-          <!-- JS-driven Masonry grid. grid-sizer defines column width for Masonry. -->
-          <div class="grid" id="gallery-grid">
+          <!-- Download form wraps the grid so selected checkboxes are submitted -->
+          <form id="download-form" method="post" action="{% url 'download_event_images' event.id %}">
+            {% csrf_token %}
+            <!-- JS-driven Masonry grid. grid-sizer defines column width for Masonry. -->
+            <div class="d-flex mb-2">
+              <div class="flex-grow-1"></div>
+              <button id="download-selected" type="submit" class="btn btn-sm btn-success ms-2" disabled>Download selected</button>
+            </div>
+            <div class="grid" id="gallery-grid">
             <div class="grid-sizer"></div>
             {% for img in images %}
               <div class="grid-item" data-img-id="{{ img.id }}">
@@ -84,7 +91,8 @@
                 </div>
               </div>
             {% endfor %}
-          </div>
+            </div>
+          </form>
         {% else %}
           <p class="text-white">No photos yet for this event.</p>
         {% endif %}
@@ -212,6 +220,7 @@
                 item.classList.toggle('selected');
                 const chk = item.querySelector('.img-select-input');
                 if(chk) chk.checked = item.classList.contains('selected');
+                updateDownloadButton();
                 // ensure Masonry re-layout to keep visuals consistent
                 try{ msnry.layout(); }catch(e){}
               });
@@ -226,9 +235,20 @@
               if(view){ view.addEventListener('click', function(ev){ ev.stopPropagation(); }); }
             });
           }
+          // enable/disable download button depending on selection
+          const downloadBtn = document.getElementById('download-selected');
+          function updateDownloadButton(){
+            if(!downloadBtn) return;
+            const any = Array.from(grid.querySelectorAll('.img-select-input')).some(i => i.checked);
+            downloadBtn.disabled = !any;
+          }
 
           // run selection init after layout
           initImageSelection();
+          // watch checkboxes in case they change externally
+          grid.addEventListener('change', function(e){ if(e.target && e.target.classList.contains('img-select-input')) updateDownloadButton(); });
+          // initial state
+          updateDownloadButton();
         });
       })();
     </script>

@@ -20,6 +20,7 @@ from django.contrib.auth.views import LogoutView
 from django.views.generic.base import RedirectView
 from events.views import home_view, calendar_view, events_json, myevents_view, register_view, event_detail, participate_event, event_edit, edit_profile
 from events.views import participated_view, mark_attendance, organized_view, upload_event_image, event_gallery
+from events.views import download_selected_images
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -42,6 +43,7 @@ urlpatterns = [
     path("events/<int:event_id>/", event_detail, name="event_detail"),
         path("events/<int:event_id>/edit/", event_edit, name="event_edit"),
     path("events/<int:event_id>/gallery/", event_gallery, name="event_gallery"),
+    path("events/<int:event_id>/download-selected/", download_selected_images, name='download_event_images'),
     path("events/<int:event_id>/upload-image/", upload_event_image, name="upload_event_image"),
     path("events/<int:event_id>/participate/", participate_event, name="event_participate"),
     path('accounts/profile/edit/', edit_profile, name='edit_profile'),
