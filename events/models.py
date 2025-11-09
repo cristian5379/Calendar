@@ -82,7 +82,10 @@ class Event(models.Model):
         ('monthly', 'Monthly'),
     ]
     recurrence_pattern = models.CharField(max_length=20, choices=RECURRENCE_CHOICES, default='none')
-    recurrence_interval = models.PositiveIntegerField(default=1, help_text='Interval for recurrence (e.g., every N days/weeks/months)')
+    # allow null so an event can explicitly have no recurrence interval when
+    # recurrence_pattern is 'none'. Making this field nullable prevents the
+    # admin/form from requiring a positive integer when recurrence is disabled.
+    recurrence_interval = models.PositiveIntegerField(null=True, blank=True, default=1, help_text='Interval for recurrence (e.g., every N days/weeks/months)')
     recurrence_end_date = models.DateField(null=True, blank=True, help_text='Optional end date for the recurrence')
 
     def __str__(self):

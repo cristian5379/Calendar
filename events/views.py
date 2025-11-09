@@ -188,7 +188,21 @@ def myevents_view(request):
             messages.success(request, 'Event created.')
             return redirect('myevents')
         else:
-            messages.error(request, 'There were errors creating the event. Please check the form below.')
+            # provide more detailed feedback so users (and developers) can see
+            # which validation rules failed when creating events.
+            # The template already renders field and non-field errors, but
+            # adding a consolidated message makes the problems obvious in UI
+            # (useful when debugging remote deployments).
+            details = []
+            # form.errors is an ErrorDict mapping field -> list of errors
+            for field, errs in form.errors.items():
+                # non-field errors come under '__all__' or the empty string
+                key = field if field else 'non_field'
+                details.append(f"{key}: {', '.join(errs)}")
+            if details:
+                messages.error(request, 'There were errors creating the event: ' + ' | '.join(details))
+            else:
+                messages.error(request, 'There were errors creating the event. Please check the form below.')
     elif request.method == 'POST' and request.POST.get('action') == 'delete':
         ev_id = request.POST.get('event_id')
         ev = get_object_or_404(Event, id=ev_id, owner=user, is_deleted=False)
