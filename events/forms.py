@@ -70,6 +70,19 @@ class EventForm(forms.ModelForm):
             for f in ('recurrence_pattern', 'recurrence_interval', 'recurrence_end_date'):
                 if f in self.fields:
                     self.fields.pop(f)
+        else:
+            # For superusers we still want recurrence to be optional when
+            # creating an event: treat empty/blank as 'none' instead of
+            # requiring a selection. Make the recurrence form fields not
+            # required and set sensible initial values.
+            if 'recurrence_pattern' in self.fields:
+                self.fields['recurrence_pattern'].required = False
+                # default to 'none' visually but allow it to be left blank
+                self.fields['recurrence_pattern'].initial = 'none'
+            if 'recurrence_interval' in self.fields:
+                self.fields['recurrence_interval'].required = False
+                # leave initial as None so empty input maps to NULL in DB
+                self.fields['recurrence_interval'].initial = None
 
     def clean(self):
         cleaned = super().clean()
@@ -110,11 +123,19 @@ class EventForm(forms.ModelForm):
 
         # Validate recurrence fields if present (only available to superusers)
         if 'recurrence_pattern' in self.fields:
-            pattern = cleaned.get('recurrence_pattern')
+            # Normalize empty/None to explicit 'none' so it's not considered
+            # a validation error and so subsequent code can rely on a value.
+            pattern = cleaned.get('recurrence_pattern') or 'none'
+            cleaned['recurrence_pattern'] = pattern
             interval = cleaned.get('recurrence_interval')
             if pattern and pattern != 'none':
-                if not interval or interval < 1:
+                # require a positive integer when a recurrence pattern is chosen
+                if interval is None or interval < 1:
                     raise forms.ValidationError('Recurrence interval must be a positive integer.')
+            else:
+                # when pattern is 'none' explicitly clear any interval so the
+                # database stores NULL instead of an unnecessary default value.
+                cleaned['recurrence_interval'] = None
 
         return cleaned
 
